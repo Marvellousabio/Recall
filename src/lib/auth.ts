@@ -18,7 +18,11 @@ const jwt = {
   }
 };
 
-const prisma = (await import('../db/prisma')).prisma;
+// Lazy load prisma to avoid top-level await
+const getPrisma = async () => {
+  const { prisma } = await import('../db/prisma');
+  return prisma;
+};
 
 const JWT_SECRET = import.meta.env.VITE_JWT_SECRET || 'default-secret-change-this';
 const JWT_EXPIRES_IN = '7d';
@@ -68,6 +72,7 @@ export async function getUserFromToken(token: string): Promise<User | null> {
   if (!decoded) return null;
 
   try {
+    const prisma = await getPrisma();
     const profile = await prisma.profile.findUnique({
       where: { id: decoded.userId }
     });
@@ -147,6 +152,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
 // Get user by ID
 export async function getUserById(userId: string): Promise<User | null> {
   try {
+    const prisma = await getPrisma();
     const profile = await prisma.profile.findUnique({
       where: { id: userId }
     });
@@ -167,6 +173,7 @@ export async function getUserById(userId: string): Promise<User | null> {
 // Update user profile
 export async function updateUser(userId: string, updates: Partial<Pick<User, 'username' | 'email'>>): Promise<User> {
   try {
+    const prisma = await getPrisma();
     const profile = await prisma.profile.update({
       where: { id: userId },
       data: updates
@@ -185,6 +192,7 @@ export async function updateUser(userId: string, updates: Partial<Pick<User, 'us
 
 // Promote user to admin (for admin use)
 export async function makeAdmin(userId: string): Promise<void> {
+  const prisma = await getPrisma();
   await prisma.profile.update({
     where: { id: userId },
     data: { role: 'admin' }

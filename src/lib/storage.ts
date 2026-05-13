@@ -1,45 +1,66 @@
-import fs from 'fs/promises';
-import path from 'path';
-
+// Browser-compatible mock storage implementation
 const UPLOAD_DIR = import.meta.env.VITE_UPLOAD_DIR || 'uploads';
 
-// Ensure upload directory exists
+// Mock file storage using localStorage (for demo purposes)
+const mockFileStorage: Record<string, { data: string; type: string; name: string }> = {};
+
+// Ensure upload directory exists (mock)
 async function ensureUploadDir() {
-  try {
-    await fs.access(UPLOAD_DIR);
-  } catch {
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  }
+  // In browser, we don't need to create directories
+  return Promise.resolve();
 }
 
-// Upload file to local filesystem
+// Upload file to browser storage (mock)
 export async function uploadFile(file: File, userId: string): Promise<string> {
   await ensureUploadDir();
 
   // Generate unique filename
-  const ext = path.extname(file.name);
-  const filename = `${userId}_${Date.now()}_${Math.random().toString(36).substring(2)}${ext}`;
-  const filepath = path.join(UPLOAD_DIR, filename);
+  const ext = file.name.split('.').pop() || '';
+  const filename = `${userId}_${Date.now()}_${Math.random().toString(36).substring(2)}${ext ? '.' + ext : ''}`;
 
-  // Convert File to buffer and write
+  // Convert File to base64 for storage
   const buffer = await file.arrayBuffer();
-  await fs.writeFile(filepath, Buffer.from(buffer));
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
-  // Return relative URL (in production, this would be a CDN URL)
+  // Store in mock storage
+  mockFileStorage[filename] = {
+    data: base64,
+    type: file.type,
+    name: file.name
+  };
+
+  // Store in localStorage for persistence
+  localStorage.setItem('mock-files', JSON.stringify(mockFileStorage));
+
+  // Return relative URL
   return `/${UPLOAD_DIR}/${filename}`;
 }
 
-// Delete file
+// Delete file (mock)
 export async function deleteFile(filename: string): Promise<void> {
-  const filepath = path.join(UPLOAD_DIR, filename);
   try {
-    await fs.unlink(filepath);
+    delete mockFileStorage[filename];
+    localStorage.setItem('mock-files', JSON.stringify(mockFileStorage));
   } catch (error) {
     console.error('Failed to delete file:', error);
   }
 }
 
-// Get file URL (for serving)
+// Get file URL (mock - returns data URL for browser display)
 export function getFileUrl(filename: string): string {
-  return `/${UPLOAD_DIR}/${filename}`;
+  const file = mockFileStorage[filename];
+  if (!file) return '';
+
+  // Return data URL for browser display
+  return `data:${file.type};base64,${file.data}`;
+}
+
+// Load stored files on module initialization
+try {
+  const stored = localStorage.getItem('mock-files');
+  if (stored) {
+    Object.assign(mockFileStorage, JSON.parse(stored));
+  }
+} catch (error) {
+  console.warn('Failed to load mock files from localStorage:', error);
 }
