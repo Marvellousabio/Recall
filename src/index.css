@@ -1,0 +1,215 @@
+/* stylelint-disable */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Project Recall Design System - AI-Powered Cognitive Mastery Platform
+   Brand: Deep navy, off-white, soft slate, electric blue accents
+   Aesthetic: Minimal, scientific, intelligent, cognitive clarity
+*/
+
+/* Inter font - fallback to system fonts when using dummy data */
+@font-face {
+  font-family: 'Inter';
+  src: url('https://resource-static.bj.bcebos.com/fonts/Inter-VariableFont_wght.woff2') format('woff2');
+  font-display: swap;
+}
+
+/* Space Grotesk font for headings - fallback to system fonts when using dummy data */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('https://resource-static.bj.bcebos.com/fonts/SpaceGrotesk-VariableFont_wght.woff2') format('woff2');
+  font-display: swap;
+}
+
+/* IBM Plex Mono for metrics - fallback to system fonts when using dummy data */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('https://resource-static.bj.bcebos.com/fonts/IBMPlexMono-Regular.woff2') format('woff2');
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 1.25rem;
+    
+    /* Core colors - Light mode */
+    --background: 0 0% 99%;
+    --foreground: 220 20% 12%;
+    
+    /* Deep navy primary */
+    --primary: 220 60% 18%;
+    --primary-foreground: 0 0% 98%;
+    
+    /* Soft slate secondary */
+    --secondary: 220 15% 96%;
+    --secondary-foreground: 220 20% 12%;
+    
+    /* Electric blue accent */
+    --accent: 210 100% 92%;
+    --accent-foreground: 215 100% 45%;
+    
+    /* Card with subtle elevation */
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 12%;
+    
+    /* Muted backgrounds */
+    --muted: 220 15% 97%;
+    --muted-foreground: 220 10% 45%;
+    
+    /* Borders - minimal */
+    --border: 220 15% 92%;
+    --input: 220 15% 92%;
+    --ring: 215 100% 45%;
+    
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 12%;
+    
+    /* Status colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --info: 215 100% 45%;
+    
+    /* Chart colors - cognitive palette */
+    --chart-1: 215 100% 45%;
+    --chart-2: 142 76% 36%;
+    --chart-3: 280 65% 60%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 340 75% 55%;
+    
+    /* Sidebar */
+    --sidebar-background: 220 20% 12%;
+    --sidebar-foreground: 220 15% 92%;
+    --sidebar-primary: 215 100% 45%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 25% 18%;
+    --sidebar-accent-foreground: 220 15% 92%;
+    --sidebar-border: 220 25% 18%;
+    --sidebar-ring: 215 100% 45%;
+    
+    /* Glassmorphism */
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 220 15% 92% / 0.3;
+  }
+
+  .dark {
+    /* Core colors - Dark mode */
+    --background: 220 25% 8%;
+    --foreground: 220 15% 92%;
+    
+    /* Deep navy primary (lighter in dark mode) */
+    --primary: 215 100% 55%;
+    --primary-foreground: 220 25% 8%;
+    
+    /* Soft slate secondary */
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 220 15% 92%;
+    
+    /* Electric blue accent */
+    --accent: 215 100% 20%;
+    --accent-foreground: 215 100% 65%;
+    
+    /* Card with subtle elevation */
+    --card: 220 22% 12%;
+    --card-foreground: 220 15% 92%;
+    
+    /* Muted backgrounds */
+    --muted: 220 20% 15%;
+    --muted-foreground: 220 10% 60%;
+    
+    /* Borders - minimal */
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 215 100% 55%;
+    
+    /* Popover */
+    --popover: 220 22% 12%;
+    --popover-foreground: 220 15% 92%;
+    
+    /* Status colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 76% 45%;
+    --warning: 38 92% 60%;
+    --info: 215 100% 55%;
+    
+    /* Chart colors - cognitive palette */
+    --chart-1: 215 100% 55%;
+    --chart-2: 142 76% 45%;
+    --chart-3: 280 65% 65%;
+    --chart-4: 38 92% 60%;
+    --chart-5: 340 75% 60%;
+    
+    /* Sidebar */
+    --sidebar-background: 220 25% 10%;
+    --sidebar-foreground: 220 15% 92%;
+    --sidebar-primary: 215 100% 55%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 220 22% 15%;
+    --sidebar-accent-foreground: 220 15% 92%;
+    --sidebar-border: 220 22% 15%;
+    --sidebar-ring: 215 100% 55%;
+    
+    /* Glassmorphism */
+    --glass-bg: 220 22% 12% / 0.7;
+    --glass-border: 220 20% 18% / 0.3;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism utility */
+  .glass {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--glass-border));
+  }
+
+  /* Gradient text utility */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-foreground)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Cognitive glow effect */
+  .cognitive-glow {
+    box-shadow: 0 0 40px hsl(var(--accent-foreground) / 0.15);
+  }
+
+  /* Metric font */
+  .font-metric {
+    font-family: 'IBM Plex Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Courier New', monospace;
+  }
+}
