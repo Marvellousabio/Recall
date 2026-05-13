@@ -84,17 +84,13 @@ Alternatively, use the official installer: Visit the Node.js official website. D
 # Step 3: Open the code package with your IDE and navigate into the code directory
 ## Dummy Data Setup
 
-This project includes a comprehensive dummy data setup for development and testing without requiring a database connection.
+This project includes comprehensive dummy data for development and demo purposes without requiring a database connection.
 
 ### Features
 - **Mock Prisma Client**: Automatically uses mock data in development mode
-- **Realistic Sample Data**: Includes profiles, flashcards, study materials, analytics, and blog posts
-- **Auto Authentication**: Automatically logs in as a test user when using dummy data
-
-### Default Test Users
-- **John Doe** (john@example.com) - Regular user with flashcards and study materials
-- **Sarah Smith** (sarah@example.com) - Regular user with Python study content
-- **Admin** (admin@example.com) - Admin user
+- **Realistic Sample Data**: Includes multiple user profiles with rich histories
+- **Power User Showcase**: Demo account (`alex@example.com`) with extensive study data
+- **Auto Authentication**: Any email/password works in demo mode
 
 ### Configuration
 The app automatically uses dummy data in development mode. To disable and use real database:
