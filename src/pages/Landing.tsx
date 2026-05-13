@@ -1,21 +1,34 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layouts/Header';
 import { Footer } from '@/components/layouts/Footer';
-import { 
-  Brain, 
-  Sparkles, 
-  Target, 
-  Clock, 
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Brain,
+  Sparkles,
+  Target,
+  Clock,
   BarChart3,
   ArrowRight,
   Check,
-  Calendar
+  Calendar,
+  Play
 } from 'lucide-react';
 
 export default function Landing() {
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDemoLogin = async () => {
+    try {
+      await signIn('demo@example.com', 'demo123');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Demo login failed:', error);
+    }
+  };
   const features = [
     {
       icon: Brain,
@@ -136,6 +149,15 @@ export default function Landing() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={handleDemoLogin}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Try Live Demo
+              </Button>
               <a href="#demo">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto">
                   Watch Demo
@@ -176,7 +198,7 @@ export default function Landing() {
 
           <div className="max-w-4xl mx-auto space-y-8">
             {steps.map((step, index) => (
-              <div key={index} className="flex gap-6 items-start opacity-0 intersect:opacity-100 transition-all duration-700" style={{ transitionDelay: `${index * 100}ms` }}>
+              <div key={index} className="flex gap-6 items-start opacity-80 intersect:opacity-100 transition-all duration-700" style={{ transitionDelay: `${index * 100}ms` }}>
                 <div className="flex-shrink-0 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-2xl font-bold font-metric text-primary">{step.number}</span>
                 </div>
@@ -205,7 +227,7 @@ export default function Landing() {
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <Card key={index} className="h-full opacity-0 intersect:opacity-100 transition-all duration-700" style={{ transitionDelay: `${index * 100}ms` }}>
+                <Card key={index} className="h-full opacity-80 intersect:opacity-100 transition-all duration-700" style={{ transitionDelay: `${index * 100}ms` }}>
                   <CardHeader>
                     <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                       <Icon className="h-6 w-6 text-primary" />
@@ -272,12 +294,23 @@ export default function Landing() {
               <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto text-pretty">
                 Join Project Recall today and experience the future of cognitive mastery.
               </p>
-              <Link to="/signup">
-                <Button size="lg">
-                  Get Started Free
-                  <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/signup">
+                  <Button size="lg" className="w-full sm:w-auto">
+                    Get Started Free
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={handleDemoLogin}
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Try Live Demo
                 </Button>
-              </Link>
+              </div>
             </CardContent>
           </Card>
         </div>

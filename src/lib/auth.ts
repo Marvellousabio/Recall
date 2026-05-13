@@ -117,6 +117,24 @@ export async function signUp(email: string, password: string, username: string):
 
 // Sign in user - Demo mode: Accept any email/password
 export async function signIn(email: string, password: string): Promise<{ user: User; token: string }> {
+  // Special handling for demo account - use any demo email to access demo data
+  if (email.includes('demo') || email === 'alex@example.com') {
+    const dummyProfiles = (await import('../db/dummy-data')).dummyProfiles;
+    const demoUser = dummyProfiles.find(p => p.id === 'user-demo');
+    if (demoUser) {
+      const token = createToken(demoUser.id, demoUser.role);
+      return {
+        user: {
+          id: demoUser.id,
+          username: demoUser.username,
+          email: email, // Keep the login email
+          role: demoUser.role as 'user' | 'admin'
+        },
+        token
+      };
+    }
+  }
+
   // Demo mode: Check localStorage first for demo users
   const demoUsers = JSON.parse(localStorage.getItem('demo-users') || '[]');
   let user = demoUsers.find((u: any) => u.email === email);

@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Clock, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { prisma } from '@/db/prisma';
+import type { ExamSession } from '@/types/types';
 // Simple toast replacement
 
 interface Question {
@@ -14,13 +18,102 @@ interface Question {
 }
 
 export default function Exam() {
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const examId = searchParams.get('id');
+
+  const [exam, setExam] = useState<ExamSession | null>(null);
+  const [loading, setLoading] = useState(true);
   const [started, setStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(3600);
   const [tabSwitches, setTabSwitches] = useState(0);
 
-  const questions: Question[] = [
+  // Load exam data
+  useEffect(() => {
+    const loadExam = async () => {
+      if (!examId || !user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const examData = await prisma.examSession.findUnique({
+          where: { id: examId }
+        });
+
+        if (examData && examData.user_id === user.id) {
+          setExam(examData);
+          setTimeLeft(examData.duration_seconds || 3600);
+        }
+      } catch (error) {
+        console.error('Failed to load exam:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadExam();
+  }, [examId, user]);
+
+  const questions: Question[] = exam ? [
+    {
+      id: '1',
+      question: `Question 1 for ${exam.title}`,
+      options: [
+        'Option A',
+        'Option B',
+        'Option C',
+        'Option D'
+      ],
+      correctAnswer: 0
+    },
+    {
+      id: '2',
+      question: `Question 2 for ${exam.title}`,
+      options: [
+        'Option A',
+        'Option B',
+        'Option C',
+        'Option D'
+      ],
+      correctAnswer: 1
+    },
+    {
+      id: '3',
+      question: `Question 3 for ${exam.title}`,
+      options: [
+        'Option A',
+        'Option B',
+        'Option C',
+        'Option D'
+      ],
+      correctAnswer: 2
+    },
+    {
+      id: '4',
+      question: `Question 4 for ${exam.title}`,
+      options: [
+        'Option A',
+        'Option B',
+        'Option C',
+        'Option D'
+      ],
+      correctAnswer: 3
+    },
+    {
+      id: '5',
+      question: `Question 5 for ${exam.title}`,
+      options: [
+        'Option A',
+        'Option B',
+        'Option C',
+        'Option D'
+      ],
+      correctAnswer: 0
+    }
+  ] : [
     {
       id: '1',
       question: 'What is the primary benefit of Active Recall?',
@@ -102,6 +195,26 @@ export default function Exam() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading exam...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!exam && examId) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Exam not found</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (!started) {
     return (
       <DashboardLayout>
@@ -110,6 +223,7 @@ export default function Exam() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl">CBT Exam Mode</CardTitle>
+                {exam && <CardDescription>{exam.title}</CardDescription>}
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
@@ -119,7 +233,7 @@ export default function Exam() {
                       <p className="font-semibold">Exam Instructions:</p>
                       <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                         <li>This exam contains {questions.length} questions</li>
-                        <li>Time limit: 60 minutes</li>
+                        <li>Time limit: {Math.floor((exam?.duration_seconds || 3600) / 60)} minutes</li>
                         <li>Tab switching will be monitored</li>
                         <li>You cannot go back to previous questions</li>
                         <li>Your progress will be saved automatically</li>
@@ -133,7 +247,7 @@ export default function Exam() {
                       <div className="text-sm text-muted-foreground">Questions</div>
                     </div>
                     <div className="p-4 rounded-lg bg-muted">
-                      <div className="text-2xl font-bold font-metric">60</div>
+                      <div className="text-2xl font-bold font-metric">{Math.floor((exam?.duration_seconds || 3600) / 60)}</div>
                       <div className="text-sm text-muted-foreground">Minutes</div>
                     </div>
                   </div>

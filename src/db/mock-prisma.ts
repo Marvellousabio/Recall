@@ -86,16 +86,23 @@ export const mockPrisma = {
       if (args?.where) {
         Object.keys(args.where).forEach(key => {
           if (args.where[key]) {
-            results = results.filter(m => (m as any)[key] === args.where[key]);
+            // Handle field name mapping (Prisma uses camelCase, data uses snake_case)
+            const dataKey = key === 'userId' ? 'user_id' : key;
+            results = results.filter(m => (m as any)[dataKey] === args.where[key]);
           }
         });
+        // If no results for the user, return user-demo data for demo purposes
+        if (results.length === 0 && args.where.userId) {
+          results = dummyStudyMaterials.filter(m => m.user_id === 'user-demo');
+        }
       }
 
       if (args?.orderBy) {
         const [field, order] = Object.entries(args.orderBy)[0];
+        const dataField = field === 'createdAt' ? 'created_at' : field;
         results.sort((a, b) => {
-          const aVal = (a as any)[field];
-          const bVal = (b as any)[field];
+          const aVal = (a as any)[dataField];
+          const bVal = (b as any)[dataField];
           if (order === 'desc') {
             return bVal > aVal ? 1 : -1;
           }
@@ -134,17 +141,24 @@ export const mockPrisma = {
             if (key === 'nextReview' && args.where[key]?.lte) {
               results = results.filter(f => new Date(f.nextReview || '') <= args.where[key].lte);
             } else {
-              results = results.filter(f => (f as any)[key] === args.where[key]);
+              // Handle field name mapping
+              const dataKey = key === 'userId' ? 'user_id' : key === 'materialId' ? 'material_id' : key;
+              results = results.filter(f => (f as any)[dataKey] === args.where[key]);
             }
           }
         });
+        // If no results for the user, return user-demo data for demo purposes
+        if (results.length === 0 && args.where.userId) {
+          results = dummyFlashcards.filter(f => f.user_id === 'user-demo');
+        }
       }
 
       if (args?.orderBy) {
         const [field, order] = Object.entries(args.orderBy)[0];
+        const dataField = field === 'createdAt' ? 'created_at' : field === 'nextReview' ? 'next_review' : field;
         results.sort((a, b) => {
-          const aVal = (a as any)[field];
-          const bVal = (b as any)[field];
+          const aVal = (a as any)[dataField];
+          const bVal = (b as any)[dataField];
           if (order === 'desc') {
             return bVal > aVal ? 1 : -1;
           }
@@ -208,16 +222,23 @@ export const mockPrisma = {
       if (args?.where) {
         Object.keys(args.where).forEach(key => {
           if (args.where[key]) {
-            results = results.filter(e => (e as any)[key] === args.where[key]);
+            // Handle field name mapping
+            const dataKey = key === 'userId' ? 'user_id' : key;
+            results = results.filter(e => (e as any)[dataKey] === args.where[key]);
           }
         });
+        // If no results for the user, return user-demo data for demo purposes
+        if (results.length === 0 && args.where.userId) {
+          results = dummyExamSessions.filter(e => e.user_id === 'user-demo');
+        }
       }
 
       if (args?.orderBy) {
         const [field, order] = Object.entries(args.orderBy)[0];
+        const dataField = field === 'createdAt' ? 'created_at' : field;
         results.sort((a, b) => {
-          const aVal = (a as any)[field];
-          const bVal = (b as any)[field];
+          const aVal = (a as any)[dataField];
+          const bVal = (b as any)[dataField];
           if (order === 'desc') {
             return bVal > aVal ? 1 : -1;
           }
@@ -248,7 +269,34 @@ export const mockPrisma = {
 
   analytics: {
     findUnique: (args: { where: { userId: string } }) => {
-      return Promise.resolve(dummyAnalytics.find(a => a.user_id === args.where.userId) || null);
+      let analytics = dummyAnalytics.find(a => a.user_id === args.where.userId);
+      if (!analytics) {
+        // Return user-demo analytics for demo purposes
+        analytics = dummyAnalytics.find(a => a.user_id === 'user-demo') || null;
+      }
+      return Promise.resolve(analytics);
+    },
+    upsert: (args: { where: { userId: string }; update: Partial<Analytics>; create: Partial<Analytics> }) => {
+      const existing = dummyAnalytics.find(a => a.user_id === args.where.userId);
+      if (existing) {
+        Object.assign(existing, args.update);
+        existing.updated_at = new Date().toISOString();
+        return Promise.resolve(existing);
+      } else {
+        const newAnalytics: Analytics = {
+          id: `analytics-${Date.now()}`,
+          user_id: args.where.userId,
+          retention_score: args.create.retention_score || 0,
+          mastery_score: args.create.mastery_score || 0,
+          streak_days: args.create.streak_days || 0,
+          last_review: args.create.last_review || null,
+          total_reviews: args.create.total_reviews || 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dummyAnalytics.push(newAnalytics);
+        return Promise.resolve(newAnalytics);
+      }
     },
     upsert: (args: { where: { userId: string }; update: Partial<Analytics>; create: Partial<Analytics> }) => {
       const existing = dummyAnalytics.find(a => a.user_id === args.where.userId);
