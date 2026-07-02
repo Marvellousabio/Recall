@@ -19,7 +19,7 @@
 
 This account represents an experienced power user who has used Recall extensively across multiple subjects and study methods.
 
----
+--- 
 
 ## What You'll See
 

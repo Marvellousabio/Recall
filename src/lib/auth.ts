@@ -20,12 +20,71 @@ const jwt = {
 
 // Lazy load prisma to avoid top-level await
 const getPrisma = async () => {
-  const { prisma } = await import('../db/prisma');
+  const { prisma } = await import('@/db/prisma');
   return prisma;
 };
 
 const JWT_SECRET = import.meta.env.VITE_JWT_SECRET || 'default-secret-change-this';
 const JWT_EXPIRES_IN = '7d';
+const DEMO_USER_ID = 'user-demo';
+
+import {
+  studyMaterialStore,
+  flashcardStore,
+  reviewSessionStore,
+  examSessionStore,
+  analyticsStore
+} from '@/lib/persistent-store';
+import {
+  dummyProfiles,
+  dummyStudyMaterials,
+  dummyFlashcards,
+  dummyReviewSessions,
+  dummyExamSessions,
+  dummyAnalytics
+} from '@/db/dummy-data';
+
+async function getMockPrisma() {
+  const { mockPrisma } = await import('@/db/mock-prisma');
+  return mockPrisma;
+}
+
+async function seedDemoDataOnce() {
+  const seenKey = 'recall:demo-seeded';
+  if (localStorage.getItem(seenKey)) return;
+
+  const prisma = await getMockPrisma();
+  const existing = await prisma.profile.findUnique({ where: { id: DEMO_USER_ID } });
+  if (!existing) return;
+
+  for (const m of dummyStudyMaterials) {
+    if (m.user_id === DEMO_USER_ID && !studyMaterialStore.items.find((x) => x.id === m.id)) {
+      studyMaterialStore.add(m);
+    }
+  }
+  for (const c of dummyFlashcards) {
+    if (c.user_id === DEMO_USER_ID && !flashcardStore.items.find((x) => x.id === c.id)) {
+      flashcardStore.add(c);
+    }
+  }
+  for (const r of dummyReviewSessions) {
+    if (r.user_id === DEMO_USER_ID) {
+      reviewSessionStore.add(r);
+    }
+  }
+  for (const e of dummyExamSessions) {
+    if (e.user_id === DEMO_USER_ID && !examSessionStore.items.find((x) => x.id === e.id)) {
+      examSessionStore.add(e);
+    }
+  }
+  for (const a of dummyAnalytics) {
+    if (a.user_id === DEMO_USER_ID && !analyticsStore.items.find((x) => x.id === a.id)) {
+      analyticsStore.add(a);
+    }
+  }
+
+  localStorage.setItem(seenKey, '1');
+}
 
 export interface User {
   id: string;
@@ -92,10 +151,8 @@ export async function getUserFromToken(token: string): Promise<User | null> {
 
 // Sign up new user - Demo mode: Accept any input
 export async function signUp(email: string, password: string, username: string): Promise<User> {
-  // Demo mode: Always create a new user, no validation
   const userId = `demo-user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Create a mock user object
   const mockUser: User = {
     id: userId,
     username: username || `demo-user-${userId.slice(-4)}`,
@@ -103,11 +160,10 @@ export async function signUp(email: string, password: string, username: string):
     role: 'user'
   };
 
-  // Store in localStorage for demo persistence
   const demoUsers = JSON.parse(localStorage.getItem('demo-users') || '[]');
   demoUsers.push({
     ...mockUser,
-    password, // Store plain password for demo
+    password,
     createdAt: new Date().toISOString()
   });
   localStorage.setItem('demo-users', JSON.stringify(demoUsers));
@@ -117,36 +173,32 @@ export async function signUp(email: string, password: string, username: string):
 
 // Sign in user - Demo mode: Accept any email/password
 export async function signIn(email: string, password: string): Promise<{ user: User; token: string }> {
-  // Special handling for demo account - use any demo email to access demo data
   if (email.includes('demo') || email === 'alex@example.com') {
-    const dummyProfiles = (await import('../db/dummy-data')).dummyProfiles;
-    const demoUser = dummyProfiles.find(p => p.id === 'user-demo');
-    if (demoUser) {
-      const token = createToken(demoUser.id, demoUser.role);
+    const demoProfile = dummyProfiles.find(p => p.id === DEMO_USER_ID);
+    if (demoProfile) {
+      await seedDemoDataOnce();
+      const token = createToken(demoProfile.id, demoProfile.role);
       return {
         user: {
-          id: demoUser.id,
-          username: demoUser.username,
-          email: email, // Keep the login email
-          role: demoUser.role as 'user' | 'admin'
+          id: demoProfile.id,
+          username: demoProfile.username,
+          email: email,
+          role: demoProfile.role as 'user' | 'admin'
         },
         token
       };
     }
   }
 
-  // Demo mode: Check localStorage first for demo users
   const demoUsers = JSON.parse(localStorage.getItem('demo-users') || '[]');
   let user = demoUsers.find((u: any) => u.email === email);
 
   if (!user) {
-    // If not found in demo users, check dummy data
-    const dummyProfiles = (await import('../db/dummy-data')).dummyProfiles;
+    const dummyProfiles = (await import('@/db/dummy-data')).dummyProfiles;
     user = dummyProfiles.find(p => p.email === email);
   }
 
   if (!user) {
-    // Demo mode: Create a user on the fly if it doesn't exist
     user = {
       id: `demo-user-${Date.now()}`,
       username: email.split('@')[0] || 'demo-user',
@@ -154,7 +206,6 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       role: 'user' as const
     };
 
-    // Add to demo users for future logins
     demoUsers.push({
       ...user,
       password,

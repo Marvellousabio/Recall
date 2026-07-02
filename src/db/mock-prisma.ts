@@ -5,7 +5,6 @@ import {
   dummyReviewSessions,
   dummyExamSessions,
   dummyAnalytics,
-  dummyBlogPosts,
 } from './dummy-data';
 import type {
   Profile,
@@ -14,10 +13,47 @@ import type {
   ReviewSession,
   ExamSession,
   Analytics,
-  BlogPost,
 } from '@/types/types';
+import {
+  studyMaterialStore,
+  flashcardStore,
+  reviewSessionStore,
+  examSessionStore,
+  analyticsStore,
+} from '@/lib/persistent-store';
 
-// Mock Prisma client that returns dummy data
+function mergeStudyMaterials(userId?: string) {
+  const seed = dummyStudyMaterials.filter((m) => m.user_id === userId || !userId);
+  const persisted = studyMaterialStore.all();
+  const seen = new Set(seed.map((m) => m.id));
+  const extra = persisted.filter((m) => !seen.has(m.id));
+  return [...seed, ...extra];
+}
+
+function mergeFlashcards(userId?: string) {
+  const seed = dummyFlashcards.filter((c) => c.user_id === userId || !userId);
+  const persisted = flashcardStore.all();
+  const seen = new Set(seed.map((c) => c.id));
+  const extra = persisted.filter((c) => !seen.has(c.id));
+  return [...seed, ...extra];
+}
+
+function mergeExamSessions(userId?: string) {
+  const seed = dummyExamSessions.filter((e) => e.user_id === userId || !userId);
+  const persisted = examSessionStore.all();
+  const seen = new Set(seed.map((e) => e.id));
+  const extra = persisted.filter((e) => !seen.has(e.id));
+  return [...seed, ...extra];
+}
+
+function mergeReviewSessions(userId?: string) {
+  const seed = dummyReviewSessions.filter((r) => r.user_id === userId || !userId);
+  const persisted = reviewSessionStore.all();
+  const seen = new Set(seed.map((r) => r.id));
+  const extra = persisted.filter((r) => !seen.has(r.id));
+  return [...seed, ...extra];
+}
+
 export const mockPrisma = {
   profile: {
     findUnique: (args: { where: { id?: string; username?: string; email?: string } }) => {
@@ -33,67 +69,15 @@ export const mockPrisma = {
       }
       return Promise.resolve(null);
     },
-    findMany: (args?: { where?: any; orderBy?: any; take?: number }) => {
-      let results = [...dummyProfiles];
-
-      if (args?.where) {
-        // Simple filtering - in a real implementation you'd handle more complex queries
-        Object.keys(args.where).forEach(key => {
-          if (args.where[key]) {
-            results = results.filter(p => (p as any)[key] === args.where[key]);
-          }
-        });
-      }
-
-      if (args?.orderBy) {
-        // Simple sorting - handle basic cases
-        const [field, order] = Object.entries(args.orderBy)[0];
-        results.sort((a, b) => {
-          const aVal = (a as any)[field];
-          const bVal = (b as any)[field];
-          if (order === 'desc') {
-            return bVal > aVal ? 1 : -1;
-          }
-          return aVal > bVal ? 1 : -1;
-        });
-      }
-
-      if (args?.take) {
-        results = results.slice(0, args.take);
-      }
-
-      return Promise.resolve(results);
-    },
-    create: (args: { data: Partial<Profile> }) => {
-      const newProfile: Profile = {
-        id: `profile-${Date.now()}`,
-        username: args.data.username || '',
-        email: args.data.email || null,
-        role: args.data.role || 'user',
-        avatar_url: args.data.avatar_url || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      dummyProfiles.push(newProfile);
-      return Promise.resolve(newProfile);
-    },
   },
 
   studyMaterial: {
     findMany: (args?: { where?: any; orderBy?: any; take?: number }) => {
-      let results = [...dummyStudyMaterials];
+      let results = mergeStudyMaterials(args?.where?.userId);
 
-      if (args?.where) {
-        Object.keys(args.where).forEach(key => {
-          if (args.where[key]) {
-            // Handle field name mapping (Prisma uses camelCase, data uses snake_case)
-            const dataKey = key === 'userId' ? 'user_id' : key;
-            results = results.filter(m => (m as any)[dataKey] === args.where[key]);
-          }
-        });
-        // If no results for the user, return user-demo data for demo purposes
-        if (results.length === 0 && args.where.userId) {
-          results = dummyStudyMaterials.filter(m => m.user_id === 'user-demo');
+      if (args?.where?.userId && results.length === 0) {
+        if (args.where.userId !== 'user-demo') {
+          results = [];
         }
       }
 
@@ -103,9 +87,7 @@ export const mockPrisma = {
         results.sort((a, b) => {
           const aVal = (a as any)[dataField];
           const bVal = (b as any)[dataField];
-          if (order === 'desc') {
-            return bVal > aVal ? 1 : -1;
-          }
+          if (order === 'desc') return bVal > aVal ? 1 : -1;
           return aVal > bVal ? 1 : -1;
         });
       }
@@ -126,31 +108,28 @@ export const mockPrisma = {
         status: args.data.status || 'pending',
         created_at: new Date().toISOString(),
       };
-      dummyStudyMaterials.push(newMaterial);
+      studyMaterialStore.add(newMaterial);
       return Promise.resolve(newMaterial);
+    },
+    update: (args: { where: { id: string }; data: Partial<StudyMaterial> }) => {
+      const updated = studyMaterialStore.update(args.where.id, args.data);
+      if (updated) return Promise.resolve(updated);
+      const dummyIndex = dummyStudyMaterials.findIndex((m) => m.id === args.where.id);
+      if (dummyIndex !== -1) {
+        dummyStudyMaterials[dummyIndex] = { ...dummyStudyMaterials[dummyIndex], ...args.data };
+        return Promise.resolve(dummyStudyMaterials[dummyIndex]);
+      }
+      return Promise.resolve(null);
     },
   },
 
   flashcard: {
     findMany: (args?: { where?: any; orderBy?: any; take?: number }) => {
-      let results = [...dummyFlashcards];
+      let results = mergeFlashcards(args?.where?.userId);
 
-      if (args?.where) {
-        Object.keys(args.where).forEach(key => {
-          if (args.where[key] !== undefined) {
-            if (key === 'nextReview' && args.where[key]?.lte) {
-              results = results.filter(f => new Date(f.nextReview || '') <= args.where[key].lte);
-            } else {
-              // Handle field name mapping
-              const dataKey = key === 'userId' ? 'user_id' : key === 'materialId' ? 'material_id' : key;
-              results = results.filter(f => (f as any)[dataKey] === args.where[key]);
-            }
-          }
-        });
-        // If no results for the user, return user-demo data for demo purposes
-        if (results.length === 0 && args.where.userId) {
-          results = dummyFlashcards.filter(f => f.user_id === 'user-demo');
-        }
+      if (args?.where?.nextReview?.lte) {
+        const target = args.where.nextReview.lte;
+        results = results.filter((f) => new Date(f.next_review || '') <= new Date(target));
       }
 
       if (args?.orderBy) {
@@ -159,9 +138,7 @@ export const mockPrisma = {
         results.sort((a, b) => {
           const aVal = (a as any)[dataField];
           const bVal = (b as any)[dataField];
-          if (order === 'desc') {
-            return bVal > aVal ? 1 : -1;
-          }
+          if (order === 'desc') return bVal > aVal ? 1 : -1;
           return aVal > bVal ? 1 : -1;
         });
       }
@@ -173,7 +150,7 @@ export const mockPrisma = {
       return Promise.resolve(results);
     },
     findUnique: (args: { where: { id: string } }) => {
-      return Promise.resolve(dummyFlashcards.find(f => f.id === args.where.id) || null);
+      return Promise.resolve(dummyFlashcards.find((f) => f.id === args.where.id) || flashcardStore.items.find((f) => f.id === args.where.id) || null);
     },
     create: (args: { data: Partial<Flashcard> }) => {
       const newFlashcard: Flashcard = {
@@ -188,14 +165,16 @@ export const mockPrisma = {
         ease_factor: args.data.ease_factor || 2.5,
         created_at: new Date().toISOString(),
       };
-      dummyFlashcards.push(newFlashcard);
+      flashcardStore.add(newFlashcard);
       return Promise.resolve(newFlashcard);
     },
     update: (args: { where: { id: string }; data: Partial<Flashcard> }) => {
-      const index = dummyFlashcards.findIndex(f => f.id === args.where.id);
-      if (index !== -1) {
-        dummyFlashcards[index] = { ...dummyFlashcards[index], ...args.data };
-        return Promise.resolve(dummyFlashcards[index]);
+      const updated = flashcardStore.update(args.where.id, args.data);
+      if (updated) return Promise.resolve(updated);
+      const dummyIndex = dummyFlashcards.findIndex((f) => f.id === args.where.id);
+      if (dummyIndex !== -1) {
+        dummyFlashcards[dummyIndex] = { ...dummyFlashcards[dummyIndex], ...args.data };
+        return Promise.resolve(dummyFlashcards[dummyIndex]);
       }
       return Promise.resolve(null);
     },
@@ -210,26 +189,18 @@ export const mockPrisma = {
         rating: args.data.rating || 3,
         reviewed_at: new Date().toISOString(),
       };
-      dummyReviewSessions.push(newSession);
+      reviewSessionStore.add(newSession);
       return Promise.resolve(newSession);
     },
   },
 
   examSession: {
     findMany: (args?: { where?: any; orderBy?: any; take?: number }) => {
-      let results = [...dummyExamSessions];
+      let results = mergeExamSessions(args?.where?.userId);
 
-      if (args?.where) {
-        Object.keys(args.where).forEach(key => {
-          if (args.where[key]) {
-            // Handle field name mapping
-            const dataKey = key === 'userId' ? 'user_id' : key;
-            results = results.filter(e => (e as any)[dataKey] === args.where[key]);
-          }
-        });
-        // If no results for the user, return user-demo data for demo purposes
-        if (results.length === 0 && args.where.userId) {
-          results = dummyExamSessions.filter(e => e.user_id === 'user-demo');
+      if (args?.where?.userId && results.length === 0) {
+        if (args.where.userId !== 'user-demo') {
+          results = [];
         }
       }
 
@@ -239,9 +210,7 @@ export const mockPrisma = {
         results.sort((a, b) => {
           const aVal = (a as any)[dataField];
           const bVal = (b as any)[dataField];
-          if (order === 'desc') {
-            return bVal > aVal ? 1 : -1;
-          }
+          if (order === 'desc') return bVal > aVal ? 1 : -1;
           return aVal > bVal ? 1 : -1;
         });
       }
@@ -251,115 +220,55 @@ export const mockPrisma = {
       }
 
       return Promise.resolve(results);
+    },
+    findUnique: (args: { where: { id: string } }) => {
+      const fromDummy = dummyExamSessions.find((e) => e.id === args.where.id);
+      const fromStore = examSessionStore.items.find((e) => e.id === args.where.id);
+      return Promise.resolve(fromDummy || fromStore || null);
     },
     create: (args: { data: Partial<ExamSession> }) => {
       const newExam: ExamSession = {
         id: `exam-${Date.now()}`,
         user_id: args.data.user_id || '',
         title: args.data.title || '',
-        score: args.data.score || null,
-        total_questions: args.data.total_questions || null,
-        duration_seconds: args.data.duration_seconds || null,
+        score: args.data.score ?? null,
+        total_questions: args.data.total_questions ?? null,
+        duration_seconds: args.data.duration_seconds ?? null,
         completed_at: new Date().toISOString(),
       };
-      dummyExamSessions.push(newExam);
+      examSessionStore.add(newExam);
       return Promise.resolve(newExam);
     },
   },
 
   analytics: {
     findUnique: (args: { where: { userId: string } }) => {
-      let analytics = dummyAnalytics.find(a => a.user_id === args.where.userId);
-      if (!analytics) {
-        // Return user-demo analytics for demo purposes
-        analytics = dummyAnalytics.find(a => a.user_id === 'user-demo') || null;
+      const fromDummy = dummyAnalytics.find((a) => a.user_id === args.where.userId);
+      const fromStore = analyticsStore.items.find((a) => a.user_id === args.where.userId);
+      if (fromDummy) return Promise.resolve(fromDummy);
+      if (fromStore) return Promise.resolve(fromStore);
+      if (args.where.userId === 'user-demo') {
+        return Promise.resolve(dummyAnalytics.find((a) => a.user_id === 'user-demo') || null);
       }
-      return Promise.resolve(analytics);
+      return Promise.resolve(null);
     },
-    upsert: (args: { where: { userId: string }; update: Partial<Analytics>; create: Partial<Analytics> }) => {
-      const existing = dummyAnalytics.find(a => a.user_id === args.where.userId);
+    update: async (args: { where: { userId: string }; data: Partial<Analytics> }) => {
+      const existing = analyticsStore.items.find((a) => a.user_id === args.where.userId);
       if (existing) {
-        Object.assign(existing, args.update);
-        existing.updated_at = new Date().toISOString();
-        return Promise.resolve(existing);
-      } else {
-        const newAnalytics: Analytics = {
-          id: `analytics-${Date.now()}`,
-          user_id: args.where.userId,
-          retention_score: args.create.retention_score || 0,
-          mastery_score: args.create.mastery_score || 0,
-          streak_days: args.create.streak_days || 0,
-          last_review: args.create.last_review || null,
-          total_reviews: args.create.total_reviews || 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        dummyAnalytics.push(newAnalytics);
-        return Promise.resolve(newAnalytics);
+        const updated = analyticsStore.update(existing.id, args.data);
+        if (updated) return Promise.resolve(updated);
       }
-    },
-    upsert: (args: { where: { userId: string }; update: Partial<Analytics>; create: Partial<Analytics> }) => {
-      const existing = dummyAnalytics.find(a => a.user_id === args.where.userId);
-      if (existing) {
-        Object.assign(existing, args.update);
-        existing.updated_at = new Date().toISOString();
-        return Promise.resolve(existing);
-      } else {
-        const newAnalytics: Analytics = {
-          id: `analytics-${Date.now()}`,
-          user_id: args.where.userId,
-          retention_score: args.create.retention_score || 0,
-          mastery_score: args.create.mastery_score || 0,
-          streak_days: args.create.streak_days || 0,
-          last_review: args.create.last_review || null,
-          total_reviews: args.create.total_reviews || 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        dummyAnalytics.push(newAnalytics);
-        return Promise.resolve(newAnalytics);
+      const dummy = dummyAnalytics.find((a) => a.user_id === args.where.userId);
+      if (dummy) {
+        Object.assign(dummy, args.data, { updated_at: new Date().toISOString() });
+        return Promise.resolve(dummy);
       }
+      return Promise.resolve(null);
     },
   },
 
   blogPost: {
-    findMany: (args?: { where?: any; orderBy?: any; take?: number }) => {
-      let results = [...dummyBlogPosts];
-
-      if (args?.where) {
-        Object.keys(args.where).forEach(key => {
-          if (args.where[key]) {
-            results = results.filter(b => (b as any)[key] === args.where[key]);
-          }
-        });
-      }
-
-      if (args?.orderBy) {
-        const [field, order] = Object.entries(args.orderBy)[0];
-        results.sort((a, b) => {
-          const aVal = (a as any)[field];
-          const bVal = (b as any)[field];
-          if (order === 'desc') {
-            return bVal > aVal ? 1 : -1;
-          }
-          return aVal > bVal ? 1 : -1;
-        });
-      }
-
-      if (args?.take) {
-        results = results.slice(0, args.take);
-      }
-
-      return Promise.resolve(results);
-    },
-    findUnique: (args: { where: { id?: string; slug?: string } }) => {
-      if (args.where.id) {
-        return Promise.resolve(dummyBlogPosts.find(b => b.id === args.where.id) || null);
-      }
-      if (args.where.slug) {
-        return Promise.resolve(dummyBlogPosts.find(b => b.slug === args.where.slug) || null);
-      }
-      return Promise.resolve(null);
-    },
+    findMany: () => Promise.resolve([]),
+    findUnique: () => Promise.resolve(null),
   },
 };

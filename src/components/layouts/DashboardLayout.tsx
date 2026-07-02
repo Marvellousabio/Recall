@@ -13,7 +13,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
-  const { profile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   
   useDashboardShortcuts();
@@ -59,17 +59,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </nav>
 
       <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-sm font-semibold text-sidebar-accent-foreground">
-              {profile?.username?.[0]?.toUpperCase() || 'U'}
-            </span>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 rounded-full bg-sidebar-accent flex items-center justify-center">
+              <span className="text-sm font-semibold text-sidebar-accent-foreground">
+                {user?.username?.[0]?.toUpperCase() || 'U'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.username}</p>
+              <p className="text-xs text-sidebar-foreground/60">{user?.role}</p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">{profile?.username}</p>
-            <p className="text-xs text-sidebar-foreground/60">{profile?.role}</p>
-          </div>
-        </div>
         <Button variant="ghost" size="sm" className="w-full text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => signOut()}>
           Sign Out
         </Button>
