@@ -7,5 +7,9 @@ if (!databaseUrl) {
 }
 
 export const prisma = new PrismaClient({
-  datasourceUrl: databaseUrl,
+  datasources: {
+    db: {
+      url: databaseUrl,
+    },
+  },
 });
