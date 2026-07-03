@@ -1,7 +1,7 @@
-import type { PrismaConfig } from '@prisma/adapter';
-
-const config: PrismaConfig = {
-  datasource: process.env.DATABASE_URL || '',
+const config = {
+  datasource: {
+    url: process.env.DATABASE_URL || '',
+  },
   schema: './prisma/schema.prisma',
 };
 
