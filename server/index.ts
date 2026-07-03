@@ -6,6 +6,8 @@ import materialRoutes from './routes/materials';
 import flashcardRoutes from './routes/flashcards';
 import examRoutes from './routes/exams';
 import analyticsRoutes from './routes/analytics';
+import blogRoutes from './routes/blog';
+import adminRoutes from './routes/admin';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,6 +21,8 @@ app.use('/api/materials', materialRoutes);
 app.use('/api/flashcards', flashcardRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/blog', blogRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

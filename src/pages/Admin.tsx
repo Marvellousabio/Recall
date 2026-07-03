@@ -4,40 +4,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { prisma } from '@/db/prisma';
 import type { Profile } from '@/types/types';
 import { Search, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
 
 export default function Admin() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsers();
   }, []);
 
   const loadUsers = async () => {
-    const data = await prisma.profile.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-
-    setUsers(data);
-    setLoading(false);
+    try {
+      const data = await api.getAdminUsers();
+      setUsers(data);
+    } catch {
+      setError('Failed to load users.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRoleChange = async (userId: string, newRole: 'user' | 'admin') => {
     try {
-      await prisma.profile.update({
-        where: { id: userId },
-        data: { role: newRole }
-      });
-      console.log('Role updated successfully');
-      loadUsers();
-    } catch (error) {
-      console.error('Failed to update role');
-      console.error('Role update error:', error);
+      const updated = await api.updateUserRole(userId, newRole);
+      setUsers(users => users.map(u => u.id === userId ? updated : u));
+      toast.success('Role updated successfully');
+    } catch {
+      toast.error('Failed to update role');
     }
   };
 
@@ -45,6 +44,29 @@ export default function Admin() {
     user.username.toLowerCase().includes(search.toLowerCase()) ||
     user.email?.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 md:p-8 space-y-8">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Shield className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-heading font-bold">Admin Panel</h1>
+              <p className="text-muted-foreground">Manage users and system settings</p>
+            </div>
+          </div>
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-destructive">{error}</p>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

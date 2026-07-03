@@ -5,26 +5,43 @@ import { Footer } from '@/components/layouts/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { prisma } from '@/db/prisma';
 import type { BlogPost } from '@/types/types';
 import { Calendar, Search } from 'lucide-react';
+
+interface BlogPostResponse {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  category: string;
+  author: string;
+  cover_image: string | null;
+  published_at: string;
+  created_at: string;
+}
 
 export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadPosts();
   }, []);
 
   const loadPosts = async () => {
-    const data = await prisma.blogPost.findMany({
-      orderBy: { publishedAt: 'desc' }
-    });
-
-    setPosts(data);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/blog');
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = (await res.json()) as BlogPostResponse[];
+      setPosts(data as BlogPost[]);
+    } catch {
+      setError('Failed to load blog posts.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredPosts = posts.filter(post =>
@@ -32,6 +49,18 @@ export default function Blog() {
     post.excerpt?.toLowerCase().includes(search.toLowerCase()) ||
     post.category.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-destructive">{error}</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

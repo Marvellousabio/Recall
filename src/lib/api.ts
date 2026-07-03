@@ -1,3 +1,5 @@
+import type { Profile, BlogPost } from '@/types/types';
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 async function request<T>(
@@ -121,5 +123,20 @@ export const api = {
     request<any>(`/analytics/${userId}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
+    }),
+
+  getBlogPosts: () =>
+    request<BlogPost[]>(`/blog`),
+
+  getBlogPost: (slug: string) =>
+    request<BlogPost>(`/blog/${encodeURIComponent(slug)}`),
+
+  getAdminUsers: () =>
+    request<Profile[]>(`/admin/users`),
+
+  updateUserRole: (userId: string, newRole: 'user' | 'admin') =>
+    request<Profile>(`/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ newRole })
     })
 };

@@ -4,9 +4,21 @@ import { Header } from '@/components/layouts/Header';
 import { Footer } from '@/components/layouts/Footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { prisma } from '@/db/prisma';
 import type { BlogPost as BlogPostType } from '@/types/types';
 import { Calendar, ArrowLeft } from 'lucide-react';
+
+interface BlogPostResponse {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  category: string;
+  author: string;
+  cover_image: string | null;
+  published_at: string;
+  created_at: string;
+}
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -22,12 +34,22 @@ export default function BlogPost() {
   const loadPost = async () => {
     if (!slug) return;
 
-    const data = await prisma.blogPost.findUnique({
-      where: { slug }
-    });
-
-    setPost(data);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/blog/${encodeURIComponent(slug)}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          setPost(null);
+          return;
+        }
+        throw new Error('Failed to fetch');
+      }
+      const data = (await res.json()) as BlogPostResponse;
+      setPost(data as BlogPostType);
+    } catch {
+      setPost(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
