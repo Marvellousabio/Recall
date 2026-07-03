@@ -4,29 +4,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { Brain, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Brain, Loader2, AlertCircle } from 'lucide-react';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { signIn, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
     try {
       await signIn(email, password);
-      console.log('Signed in successfully!');
-      // Redirect to the page they were trying to access, or dashboard
+      toast.success('Signed in successfully!');
       const from = (location.state as any)?.from || '/dashboard';
       navigate(from, { replace: true });
-    } catch (error: any) {
-      console.error(error.message || 'Sign in failed');
+    } catch (err: any) {
+      const message = err?.message || 'Sign in failed';
+      setError(message);
+      toast.error(message);
       setLoading(false);
     }
   };
@@ -46,6 +51,11 @@ export default function SignIn() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert variant="destructive" className={error ? '' : 'hidden'}>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

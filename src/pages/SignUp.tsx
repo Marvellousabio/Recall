@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-// Simple toast replacement
-import { Brain, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Brain, Loader2, AlertCircle } from 'lucide-react';
 
 export default function SignUp() {
   const [username, setUsername] = useState('');
@@ -16,24 +17,26 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
     if (!agreedToTerms) {
-      console.error('Please agree to the Terms of Service and Privacy Policy');
+      setError('Please agree to the Terms of Service and Privacy Policy');
       return;
     }
 
     if (password !== confirmPassword) {
-      console.error('Passwords do not match');
+      setError('Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
-      console.error('Password must be at least 6 characters');
+      setError('Password must be at least 6 characters');
       return;
     }
 
@@ -41,10 +44,12 @@ export default function SignUp() {
 
     try {
       await signUp(email, password, username);
-      console.log('Account created successfully!');
+      toast.success('Account created successfully!');
       navigate('/dashboard');
-    } catch (error: any) {
-      console.error(error.message || 'Sign up failed');
+    } catch (err: any) {
+      const message = err?.message || 'Sign up failed';
+      setError(message);
+      toast.error(message);
       setLoading(false);
     }
   };
@@ -65,6 +70,11 @@ export default function SignUp() {
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
+             <Alert variant="destructive" className={error ? '' : 'hidden'}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
              <div className="space-y-2">
                <Label htmlFor="username">Username</Label>
                <Input

@@ -7,6 +7,7 @@ import { routes, type RouteConfig } from './routes';
 
 import { AuthProvider } from '@/contexts/AuthContext';
 import { RouteGuard } from '@/components/common/RouteGuard';
+import { Toaster } from '@/components/ui/sonner';
 
 const App: React.FC = () => {
   return (
@@ -14,6 +15,7 @@ const App: React.FC = () => {
       <AuthProvider>
         <RouteGuard>
           <IntersectObserver />
+          <Toaster />
           <div className="flex flex-col min-h-screen">
             <main className="flex-grow">
               <Routes>
