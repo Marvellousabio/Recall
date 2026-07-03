@@ -7,8 +7,8 @@
   },
   "scripts": {
     "build": "prisma generate",
-    "start": "tsx server/index.ts",
-    "dev": "tsx watch server/index.ts"
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts"
   },
   "dependencies": {
     "express": "^5.2.1",
