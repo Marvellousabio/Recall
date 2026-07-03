@@ -1,7 +1,5 @@
 const config = {
-  datasource: {
-    url: process.env.DATABASE_URL || '',
-  },
+  datasourceUrl: process.env.DATABASE_URL,
   schema: './prisma/schema.prisma',
 };
 
