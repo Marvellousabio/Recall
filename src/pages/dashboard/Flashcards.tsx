@@ -3,10 +3,9 @@ import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { prisma } from '@/db/prisma';
+import { api } from '@/lib/api';
 import type { Flashcard } from '@/types/types';
 import { RotateCcw, CheckCircle } from 'lucide-react';
-// Simple toast replacement
 
 export default function Flashcards() {
   const { user } = useAuth();
@@ -24,56 +23,52 @@ export default function Flashcards() {
   const loadFlashcards = async () => {
     if (!user) return;
 
-    const data = await prisma.flashcard.findMany({
-      where: {
-        userId: user.id,
-        nextReview: {
-          lte: new Date()
-        }
-      },
-      orderBy: {
-        nextReview: 'asc'
-      }
-    });
-
-    setFlashcards(data);
-    setLoading(false);
+    try {
+      const data = await api.getFlashcards({
+        user_id: user.id,
+        next_review_lte: new Date().toISOString()
+      });
+      setFlashcards(data);
+    } catch (error) {
+      console.error('Failed to load flashcards:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRating = async (rating: number) => {
     const card = flashcards[currentIndex];
-    if (!card) return;
+    if (!card || !user) return;
 
     const { interval_days, ease_factor } = calculateSM2(card, rating);
 
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + interval_days);
 
-    await prisma.flashcard.update({
-      where: { id: card.id },
-      data: {
-        intervalDays: interval_days,
-        easeFactor: ease_factor,
-        nextReview
-      }
-    });
+    try {
+      await Promise.all([
+        api.updateFlashcard(card.id, {
+          interval_days,
+          ease_factor,
+          next_review: nextReview.toISOString()
+        }),
+        api.createReviewSession({
+          user_id: user.id,
+          flashcard_id: card.id,
+          rating
+        })
+      ]);
 
-    await prisma.reviewSession.create({
-      data: {
-        userId: user.id,
-        flashcardId: card.id,
-        rating
+      if (currentIndex < flashcards.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+        setFlipped(false);
+      } else {
+        loadFlashcards();
+        setCurrentIndex(0);
+        setFlipped(false);
       }
-    });
-
-    if (currentIndex < flashcards.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setFlipped(false);
-    } else {
-      console.log('Review session complete!');
-      loadFlashcards();
-      setCurrentIndex(0);
-      setFlipped(false);
+    } catch (error) {
+      console.error('Failed to update flashcard:', error);
     }
   };
 

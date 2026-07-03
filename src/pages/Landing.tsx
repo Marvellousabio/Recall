@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layouts/Header';
 import { Footer } from '@/components/layouts/Footer';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   Brain,
   Sparkles,
@@ -13,22 +12,12 @@ import {
   BarChart3,
   ArrowRight,
   Check,
-  Calendar,
-  Play
+  Calendar
 } from 'lucide-react';
 
 export default function Landing() {
-  const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  const handleDemoLogin = async () => {
-    try {
-      await signIn('demo@example.com', 'demo123');
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Demo login failed:', error);
-    }
-  };
   const features = [
     {
       icon: Brain,
@@ -149,16 +138,7 @@ export default function Landing() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={handleDemoLogin}
-              >
-                <Play className="mr-2 h-4 w-4" />
-                Try Live Demo
-              </Button>
-              <a href="#demo">
+              <a href="#features">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto">
                   Watch Demo
                 </Button>
@@ -185,34 +165,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-20 bg-muted/30">
-        <div className="container">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-balance">
-              How It Works
-            </h2>
-            <p className="text-lg text-muted-foreground text-pretty">
-              Transform your study materials into an intelligent learning system in five simple steps.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto space-y-8">
-            {steps.map((step, index) => (
-              <div key={index} className="flex gap-6 items-start opacity-80 intersect:opacity-100 transition-all duration-700" style={{ transitionDelay: `${index * 100}ms` }}>
-                <div className="flex-shrink-0 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-2xl font-bold font-metric text-primary">{step.number}</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-heading font-semibold mb-2">{step.title}</h3>
-                  <p className="text-muted-foreground">{step.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20">
+      <section className="py-20 bg-muted/30" id="features">
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-balance">
@@ -248,6 +201,33 @@ export default function Landing() {
                 </Card>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="container">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-balance">
+              How It Works
+            </h2>
+            <p className="text-lg text-muted-foreground text-pretty">
+              Transform your study materials into an intelligent learning system in five simple steps.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto space-y-8">
+            {steps.map((step, index) => (
+              <div key={index} className="flex gap-6 items-start opacity-80 intersect:opacity-100 transition-all duration-700" style={{ transitionDelay: `${index * 100}ms` }}>
+                <div className="flex-shrink-0 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-2xl font-bold font-metric text-primary">{step.number}</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-heading font-semibold mb-2">{step.title}</h3>
+                  <p className="text-muted-foreground">{step.description}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -301,15 +281,11 @@ export default function Landing() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  onClick={handleDemoLogin}
-                >
-                  <Play className="mr-2 h-4 w-4" />
-                  Try Live Demo
-                </Button>
+                <Link to="/signin">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                    Sign In
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

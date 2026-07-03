@@ -13,8 +13,6 @@ import Flashcards from './pages/dashboard/Flashcards';
 import Tutor from './pages/dashboard/Tutor';
 import Exam from './pages/dashboard/Exam';
 import AnalyticsDashboard from './pages/dashboard/Analytics';
-import Admin from './pages/Admin';
-import AuthDebug from './pages/AuthDebug';
 import type { ReactNode } from 'react';
 
 export interface RouteConfig {
@@ -82,12 +80,6 @@ export const routes: RouteConfig[] = [
     public: true,
   },
   {
-    name: 'Auth Debug',
-    path: '/auth-debug',
-    element: <AuthDebug />,
-    public: true,
-  },
-  {
     name: 'Dashboard',
     path: '/dashboard',
     element: <Dashboard />,
@@ -121,12 +113,6 @@ export const routes: RouteConfig[] = [
     name: 'Analytics',
     path: '/dashboard/analytics',
     element: <AnalyticsDashboard />,
-    public: false,
-  },
-  {
-    name: 'Admin',
-    path: '/admin',
-    element: <Admin />,
     public: false,
   },
 ];

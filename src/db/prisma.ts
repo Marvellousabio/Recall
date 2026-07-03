@@ -1,4 +1,3 @@
-import { mockPrisma } from './mock-prisma';
+import { PrismaClient } from '@prisma/client';
 
-// Use mock data for development and testing
-export const prisma = mockPrisma;
+export const prisma = new PrismaClient();

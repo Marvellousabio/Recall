@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-// Simple toast replacement
-import { Brain, Loader2, Play } from 'lucide-react';
+import { Brain, Loader2 } from 'lucide-react';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -77,29 +76,6 @@ export default function SignIn() {
               Sign In
             </Button>
           </form>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => signIn('demo@example.com', 'demo123').then(() => {
-              const from = (location.state as any)?.from || '/dashboard';
-              navigate(from, { replace: true });
-            })}
-            disabled={loading}
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Try Demo Account
-          </Button>
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{' '}

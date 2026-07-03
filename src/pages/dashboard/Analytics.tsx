@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { prisma } from '@/db/prisma';
+import { api } from '@/lib/api';
 import type { Analytics } from '@/types/types';
-// Charts removed for simplicity
 import { TrendingUp, Target, Brain, Calendar } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
@@ -21,12 +20,14 @@ export default function AnalyticsDashboard() {
   const loadAnalytics = async () => {
     if (!user) return;
 
-    const data = await prisma.analytics.findUnique({
-      where: { userId: user.id }
-    });
-
-    setAnalytics(data);
-    setLoading(false);
+    try {
+      const data = await api.getAnalytics(user.id);
+      setAnalytics(data);
+    } catch (error) {
+      console.error('Failed to load analytics:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const retentionData = [
@@ -39,24 +40,24 @@ export default function AnalyticsDashboard() {
     { day: 'Sun', retention: 88 }
   ];
 
-   const reviewData = [
-     { week: 'Week 1', reviews: 45 },
-     { week: 'Week 2', reviews: 62 },
-     { week: 'Week 3', reviews: 78 },
-     { week: 'Week 4', reviews: 95 }
-   ];
+  const reviewData = [
+    { week: 'Week 1', reviews: 45 },
+    { week: 'Week 2', reviews: 62 },
+    { week: 'Week 3', reviews: 78 },
+    { week: 'Week 4', reviews: 95 }
+  ];
 
-   if (loading) {
-     return (
-       <DashboardLayout>
-         <div className="flex items-center justify-center h-full">
-           <p className="text-muted-foreground">Loading analytics...</p>
-         </div>
-       </DashboardLayout>
-     );
-   }
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading analytics...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-   const stats = [
+  const stats = [
     {
       icon: Brain,
       label: 'Retention Score',

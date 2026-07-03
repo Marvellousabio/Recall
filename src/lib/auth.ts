@@ -1,91 +1,3 @@
-// Mock implementations for browser compatibility (using dummy data)
-const bcrypt = {
-  hash: async (password: string) => `mock_hash_${password}`,
-  compare: async (password: string, hash: string) => hash === `mock_hash_${password}`
-};
-
-const jwt = {
-  sign: (payload: any, secret: string) => `mock_token_${JSON.stringify(payload)}`,
-  verify: (token: string, secret: string) => {
-    if (token.startsWith('mock_token_')) {
-      try {
-        return JSON.parse(token.replace('mock_token_', ''));
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
-};
-
-// Lazy load prisma to avoid top-level await
-const getPrisma = async () => {
-  const { prisma } = await import('@/db/prisma');
-  return prisma;
-};
-
-const JWT_SECRET = import.meta.env.VITE_JWT_SECRET || 'default-secret-change-this';
-const JWT_EXPIRES_IN = '7d';
-const DEMO_USER_ID = 'user-demo';
-
-import {
-  studyMaterialStore,
-  flashcardStore,
-  reviewSessionStore,
-  examSessionStore,
-  analyticsStore
-} from '@/lib/persistent-store';
-import {
-  dummyProfiles,
-  dummyStudyMaterials,
-  dummyFlashcards,
-  dummyReviewSessions,
-  dummyExamSessions,
-  dummyAnalytics
-} from '@/db/dummy-data';
-
-async function getMockPrisma() {
-  const { mockPrisma } = await import('@/db/mock-prisma');
-  return mockPrisma;
-}
-
-async function seedDemoDataOnce() {
-  const seenKey = 'recall:demo-seeded';
-  if (localStorage.getItem(seenKey)) return;
-
-  const prisma = await getMockPrisma();
-  const existing = await prisma.profile.findUnique({ where: { id: DEMO_USER_ID } });
-  if (!existing) return;
-
-  for (const m of dummyStudyMaterials) {
-    if (m.user_id === DEMO_USER_ID && !studyMaterialStore.items.find((x) => x.id === m.id)) {
-      studyMaterialStore.add(m);
-    }
-  }
-  for (const c of dummyFlashcards) {
-    if (c.user_id === DEMO_USER_ID && !flashcardStore.items.find((x) => x.id === c.id)) {
-      flashcardStore.add(c);
-    }
-  }
-  for (const r of dummyReviewSessions) {
-    if (r.user_id === DEMO_USER_ID) {
-      reviewSessionStore.add(r);
-    }
-  }
-  for (const e of dummyExamSessions) {
-    if (e.user_id === DEMO_USER_ID && !examSessionStore.items.find((x) => x.id === e.id)) {
-      examSessionStore.add(e);
-    }
-  }
-  for (const a of dummyAnalytics) {
-    if (a.user_id === DEMO_USER_ID && !analyticsStore.items.find((x) => x.id === a.id)) {
-      analyticsStore.add(a);
-    }
-  }
-
-  localStorage.setItem(seenKey, '1');
-}
-
 export interface User {
   id: string;
   username: string;
@@ -100,170 +12,104 @@ export interface AuthToken {
   exp: number;
 }
 
-// Hash password
-export async function hashPassword(password: string): Promise<string> {
-  const saltRounds = 12;
-  return bcrypt.hash(password, saltRounds);
-}
-
-// Verify password
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
-}
-
-// Create JWT token
-export function createToken(userId: string, role: string): string {
-  return jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
-
-// Verify JWT token
-export function verifyToken(token: string): AuthToken | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as AuthToken;
-  } catch {
-    return null;
-  }
-}
-
-// Get user from token
-export async function getUserFromToken(token: string): Promise<User | null> {
-  const decoded = verifyToken(token);
-  if (!decoded) return null;
-
-  try {
-    const prisma = await getPrisma();
-    const profile = await prisma.profile.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    if (!profile) return null;
-
-    return {
-      id: profile.id,
-      username: profile.username,
-      email: profile.email || '',
-      role: profile.role as 'user' | 'admin'
-    };
-  } catch {
-    return null;
-  }
-}
-
-// Sign up new user - Demo mode: Accept any input
 export async function signUp(email: string, password: string, username: string): Promise<User> {
-  const userId = `demo-user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-  const mockUser: User = {
-    id: userId,
-    username: username || `demo-user-${userId.slice(-4)}`,
-    email: email || `${username}@demo.com`,
-    role: 'user'
-  };
-
-  const demoUsers = JSON.parse(localStorage.getItem('demo-users') || '[]');
-  demoUsers.push({
-    ...mockUser,
-    password,
-    createdAt: new Date().toISOString()
+  const response = await fetch('/api/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password })
   });
-  localStorage.setItem('demo-users', JSON.stringify(demoUsers));
 
-  return mockUser;
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Sign up failed' }));
+    throw new Error(error.error || 'Sign up failed');
+  }
+
+  const data = await response.json();
+  return data.user;
 }
 
-// Sign in user - Demo mode: Accept any email/password
 export async function signIn(email: string, password: string): Promise<{ user: User; token: string }> {
-  if (email.includes('demo') || email === 'alex@example.com') {
-    const demoProfile = dummyProfiles.find(p => p.id === DEMO_USER_ID);
-    if (demoProfile) {
-      await seedDemoDataOnce();
-      const token = createToken(demoProfile.id, demoProfile.role);
-      return {
-        user: {
-          id: demoProfile.id,
-          username: demoProfile.username,
-          email: email,
-          role: demoProfile.role as 'user' | 'admin'
-        },
-        token
-      };
-    }
+  const response = await fetch('/api/auth/signin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Sign in failed' }));
+    throw new Error(error.error || 'Sign in failed');
   }
 
-  const demoUsers = JSON.parse(localStorage.getItem('demo-users') || '[]');
-  let user = demoUsers.find((u: any) => u.email === email);
-
-  if (!user) {
-    const dummyProfiles = (await import('@/db/dummy-data')).dummyProfiles;
-    user = dummyProfiles.find(p => p.email === email);
-  }
-
-  if (!user) {
-    user = {
-      id: `demo-user-${Date.now()}`,
-      username: email.split('@')[0] || 'demo-user',
-      email: email,
-      role: 'user' as const
-    };
-
-    demoUsers.push({
-      ...user,
-      password,
-      createdAt: new Date().toISOString()
-    });
-    localStorage.setItem('demo-users', JSON.stringify(demoUsers));
-  }
-
-  const token = createToken(user.id, user.role);
-  return { user, token };
+  return response.json();
 }
 
-// Get user by ID
+export async function getUserFromToken(token: string): Promise<User | null> {
+  try {
+    const response = await fetch('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export async function getUserById(userId: string): Promise<User | null> {
   try {
-    const prisma = await getPrisma();
-    const profile = await prisma.profile.findUnique({
-      where: { id: userId }
+    const response = await fetch(`/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}` }
     });
 
-    if (!profile) return null;
+    if (!response.ok) {
+      return null;
+    }
 
-    return {
-      id: profile.id,
-      username: profile.username,
-      email: profile.email || '',
-      role: profile.role as 'user' | 'admin'
-    };
+    const data = await response.json();
+    return data;
   } catch {
     return null;
   }
 }
 
-// Update user profile
-export async function updateUser(userId: string, updates: Partial<Pick<User, 'username' | 'email'>>): Promise<User> {
-  try {
-    const prisma = await getPrisma();
-    const profile = await prisma.profile.update({
-      where: { id: userId },
-      data: updates
-    });
+export async function updateUser(userId: string, updates: { username?: string; email?: string }): Promise<User> {
+  const response = await fetch(`/api/auth/me`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+    },
+    body: JSON.stringify(updates)
+  });
 
-    return {
-      id: profile.id,
-      username: profile.username,
-      email: profile.email || '',
-      role: profile.role as 'user' | 'admin'
-    };
-  } catch (error) {
+  if (!response.ok) {
     throw new Error('Failed to update user');
   }
+
+  return response.json();
 }
 
-// Promote user to admin (for admin use)
 export async function makeAdmin(userId: string): Promise<void> {
-  const prisma = await getPrisma();
-  await prisma.profile.update({
-    where: { id: userId },
-    data: { role: 'admin' }
-  });
+  throw new Error('Not implemented');
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  throw new Error('Not implemented on client');
+}
+
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  throw new Error('Not implemented on client');
+}
+
+export function createToken(userId: string, role: string): string {
+  throw new Error('Not implemented on client');
+}
+
+export function verifyToken(token: string): AuthToken | null {
+  throw new Error('Not implemented on client');
 }

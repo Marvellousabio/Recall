@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState } from 'react';
 
 export function Header() {
-  const { user, profile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
 
   const navigation = [
@@ -51,7 +51,7 @@ export function Header() {
               <Link to="/dashboard">
                 <Button variant="ghost" size="sm">Dashboard</Button>
               </Link>
-              {profile?.role === 'admin' && (
+              {user?.role === 'admin' && (
                 <Link to="/admin">
                   <Button variant="ghost" size="sm">Admin</Button>
                 </Link>
@@ -85,7 +85,7 @@ export function Header() {
                     <Link to="/dashboard" onClick={() => setOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">Dashboard</Button>
                     </Link>
-                    {profile?.role === 'admin' && (
+                    {user?.role === 'admin' && (
                       <Link to="/admin" onClick={() => setOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">Admin</Button>
                       </Link>

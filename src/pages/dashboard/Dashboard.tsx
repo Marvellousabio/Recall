@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { prisma } from '@/db/prisma';
+import { api } from '@/lib/api';
 import type { Analytics, Flashcard } from '@/types/types';
 import { Brain, BookOpen, TrendingUp, Flame, Calendar, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -21,43 +21,35 @@ export default function Dashboard() {
     }
   }, [user]);
 
-   const loadDashboardData = async () => {
-     if (!user) return;
+  const loadDashboardData = async () => {
+    if (!user) return;
 
-     const [analyticsData, flashcardsData] = await Promise.all([
-       prisma.analytics.findUnique({
-         where: { userId: user.id }
-       }),
-       prisma.flashcard.findMany({
-         where: {
-           userId: user.id,
-           nextReview: {
-             lte: new Date()
-           }
-         },
-         orderBy: {
-           nextReview: 'asc'
-         },
-         take: 10
-       })
-     ]);
+    try {
+      const [analyticsData, flashcardsData] = await Promise.all([
+        api.getAnalytics(user.id),
+        api.getFlashcards({ user_id: user.id, next_review_lte: new Date().toISOString() })
+      ]);
 
-     setAnalytics(analyticsData);
-     setDueFlashcards(flashcardsData);
-     setLoading(false);
-   };
+      setAnalytics(analyticsData);
+      setDueFlashcards(flashcardsData.slice(0, 10));
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-   if (loading) {
-     return (
-       <DashboardLayout>
-         <div className="flex items-center justify-center h-full">
-           <p className="text-muted-foreground">Loading dashboard...</p>
-         </div>
-       </DashboardLayout>
-     );
-   }
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-   const stats = [
+  const stats = [
     {
       icon: Brain,
       label: 'Retention Score',

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Bot, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,6 +13,7 @@ interface Message {
 }
 
 export default function Tutor() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -22,21 +24,43 @@ export default function Tutor() {
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !user) return;
 
     const userMessage: Message = { role: 'user', content: input };
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
-    setTimeout(() => {
-      const aiResponse: Message = {
+    try {
+      const response = await fetch('/api/tutor/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+        },
+        body: JSON.stringify({
+          message: input,
+          user_id: user.id
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.'
+        }]);
+      }
+    } catch {
+      setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'This is a demo response. In production, this would connect to an AI API to provide intelligent, context-aware answers based on your study materials.'
-      };
-      setMessages(prev => [...prev, aiResponse]);
+        content: 'Sorry, I encountered an error. Please try again.'
+      }]);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
